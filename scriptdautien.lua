@@ -5,9 +5,8 @@ end
 
 local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
-local Workspace = game:GetService("Workspace")
-local VirtualUser = game:GetService("VirtualUser")
-local Camera = Workspace.CurrentCamera
+local Workspace = game:GetService("Workspace>
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 -- TẢI THƯ VIỆN ORIONLIB TRỰC TIẾP TỪ INTERNET
 local success, OrionLib = pcall(function()
@@ -83,10 +82,10 @@ end
 
 -- TẠO GIAO DIỆN MENU
 local Window = OrionLib:MakeWindow({
-	Name = "Dizzi Hub | Click Auto Farm",
+	Name = "Dizzi Hub | Remote Attack Farm",
 	HidePremium = false,
 	SaveConfig = false,
-	ConfigFolder = "DizziConfig_Click",
+	ConfigFolder = "DizziConfig_Remote",
 	IntroIcon = "rbxassetid://84764915900713",
 	IntroText = "Dizzi Hub Loading..."
 })
@@ -124,15 +123,15 @@ FarmTab:AddTextbox({
 	Default = "Reborn Skeleton, Living Zombie, Demonic Soul, Possessed Mummy",
 	TextDisappear = false,
 	Callback = function(Value)
-		local list = {}
+		valList = {}
 		for mobName in Value:gmatch("[^,]+") do
 			local cleanName = mobName:match("^%s*(.-)%s*$")
 			if cleanName ~= "" then
-				table.insert(list, cleanName)
+				table.insert(valList, cleanName)
 			end
 		end
-		if #list > 0 then
-			getgenv().TargetMobNames = list
+		if #valList > 0 then
+			getgenv().TargetMobNames = valList
 		end
 	end
 })
@@ -147,7 +146,7 @@ FarmTab:AddDropdown({
 })
 
 FarmTab:AddToggle({
-	Name = "Auto Farm Click Màn Hình",
+	Name = "Auto Farm (Remote Attack Chuẩn)",
 	Default = false,
 	Callback = function(Value)
 		getgenv().AutoFarm = Value
@@ -166,18 +165,24 @@ FarmTab:AddToggle({
 						if mob and mob:FindFirstChild("HumanoidRootPart") then
 							local mobRoot = mob.HumanoidRootPart
 							
-							-- Bay lơ lửng cách phía trên quái 18 studs
+							-- Giữ nhân vật lơ lửng ổn định bên trên quái, không bị giật màn hình
 							char.HumanoidRootPart.CFrame = mobRoot.CFrame * CFrame.new(0, 18, 0)
 							char.HumanoidRootPart.Velocity = Vector3.new(0, 0, 0)
 							
-							-- Hướng camera nhìn thẳng xuống con quái để cú click màn hình trúng đích
-							Camera.CFrame = CFrame.new(Camera.CFrame.Position, mobRoot.Position)
+							-- 3. Kích hoạt tấn công trực tiếp qua RemoteEvent của game (Chắc chắn đánh trúng)
+							local combatRemote = ReplicatedStorage:FindFirstChild("Remotes") and ReplicatedStorage.Remotes:FindFirstChild("CommF_")
+							if combatRemote then
+								combatRemote:InvokeServer("AddPoint", "Melee", 0) -- Giữ kết nối
+							end
 							
-							-- 3. Giả lập bấm click màn hình điện thoại để đánh
-							VirtualUser:CaptureController()
-							VirtualUser:Button1Down(Vector2.new(100, 100), Camera.CFrame)
-							task.wait(0.05)
-							VirtualUser:Button1Up(Vector2.new(100, 100), Camera.CFrame)
+							-- Ép vũ khí trên tay thực hiện đòn tấn công
+							local tool = char:FindFirstChildOfClass("Tool")
+							if tool and tool:FindFirstChild("RemoteFunctionCall") then
+								tool.RemoteFunctionCall:InvokeServer(mobRoot.Position)
+							elseif tool then
+								-- Gọi sự kiện kích hoạt đòn đánh mặc định của Tool
+								tool:Activate()
+							end
 						end
 					end
 				end)
