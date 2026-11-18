@@ -22,7 +22,6 @@ end
 -- CÀI ĐẶT MẶC ĐỊNH
 -- ==========================================
 getgenv().AutoFarm = false
--- Mảng chứa danh sách tên quái có khoảng trắng
 getgenv().TargetMobNames = {"Reborn Skeleton", "Living Zombie", "Demonic Soul", "Possessed Mummy"} 
 getgenv().SelectedWeapon = "Melee"
 
@@ -39,7 +38,6 @@ local function EquipWeapon(toolType)
     
     local backpack = LocalPlayer:FindFirstChildOfClass("Backpack")
     if backpack then
-        -- Duyệt qua toàn bộ túi đồ để tìm vũ khí khớp
         for _, item in pairs(backpack:GetChildren()) do
             if item:IsA("Tool") then
                 if toolType == "Sword" and item.ToolTip == "Sword" then
@@ -54,7 +52,7 @@ local function EquipWeapon(toolType)
     end
 end
 
--- HÀM TÌM QUÁI KHỚP TÊN (HỖ TRỢ TÊN CÓ KHOẢNG TRẮNG)
+-- HÀM TÌM QUÁI KHỚP TÊN (ƯU TIÊN CON GẦN NHẤT)
 local function GetMobFromList(nameList)
     local target = nil
     local shortestDistance = math.huge
@@ -66,7 +64,6 @@ local function GetMobFromList(nameList)
             local rootPart = mob:FindFirstChild("HumanoidRootPart")
             if hum and rootPart and hum.Health > 0 and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
                 for _, targetName in ipairs(nameList) do
-                    -- Làm sạch khoảng trắng thừa và so sánh không phân biệt chữ hoa/thường
                     local cleanTarget = targetName:match("^%s*(.-)%s*$")
                     if mob.Name:lower():find(cleanTarget:lower()) then
                         local distance = (LocalPlayer.Character.HumanoidRootPart.Position - rootPart.Position).Magnitude
@@ -85,10 +82,10 @@ end
 
 -- TẠO GIAO DIỆN MENU
 local Window = OrionLib:MakeWindow({
-	Name = "Dizzi Hub | Multi-Mob Farm",
+	Name = "Dizzi Hub | High Above Farm",
 	HidePremium = false,
 	SaveConfig = false,
-	ConfigFolder = "DizziConfig_Multi_Fix",
+	ConfigFolder = "DizziConfig_HighAbove",
 	IntroIcon = "rbxassetid://84764915900713",
 	IntroText = "Dizzi Hub Loading..."
 })
@@ -121,16 +118,13 @@ local FarmTab = Window:MakeTab({
 	PremiumOnly = false
 })
 
--- Ô nhập danh sách tên quái (Cắt chuỗi chuẩn theo dấu phẩy để giữ nguyên khoảng trắng trong tên)
 FarmTab:AddTextbox({
 	Name = "Danh sách tên quái (Cách nhau dấu phẩy)",
 	Default = "Reborn Skeleton, Living Zombie, Demonic Soul, Possessed Mummy",
 	TextDisappear = false,
 	Callback = function(Value)
 		local list = {}
-		-- Tách chuỗi theo dấu phẩy thay vì khoảng trắng để giữ nguyên tên có khoảng trắng bên trong
 		for mobName in Value:gmatch("[^,]+") do
-			-- Loại bỏ khoảng trắng thừa ở đầu và cuối mỗi tên sau khi cắt
 			local cleanName = mobName:match("^%s*(.-)%s*$")
 			if cleanName ~= "" then
 				table.insert(list, cleanName)
@@ -152,7 +146,7 @@ FarmTab:AddDropdown({
 })
 
 FarmTab:AddToggle({
-	Name = "Auto Farm Nhiều Quái",
+	Name = "Auto Farm Bay Trên Quái",
 	Default = false,
 	Callback = function(Value)
 		getgenv().AutoFarm = Value
@@ -163,14 +157,25 @@ FarmTab:AddToggle({
 				pcall(function()
 					local char = LocalPlayer.Character
 					if char and char:FindFirstChild("HumanoidRootPart") then
+						-- 1. Tự động cầm vũ khí
 						EquipWeapon(getgenv().SelectedWeapon)
 						
+						-- 2. Tìm quái
 						local mob = GetMobFromList(getgenv().TargetMobNames)
 						if mob and mob:FindFirstChild("HumanoidRootPart") then
-							char.HumanoidRootPart.CFrame = mob.HumanoidRootPart.CFrame * CFrame.new(0, 4, 2)
+							local mobRoot = mob.HumanoidRootPart
 							
+							-- ĐẶT NHÂN VẬT BAY CAO HẲN LÊN TRÊN ĐẦU QUÁI (Cách 18 studs theo chiều dọc Y)
+							char.HumanoidRootPart.CFrame = mobRoot.CFrame * CFrame.new(0, 18, 0)
+							
+							-- Triệt tiêu gia tốc để đứng lơ lửng cố định không bị rơi hay giật
+							char.HumanoidRootPart.Velocity = Vector3.new(0, 0, 0)
+							
+							-- 3. Kích hoạt click tấn công
 							VirtualUser:CaptureController()
-							VirtualUser:Button1Down(Vector2.new(100, 100), Workspace.CurrentCamera.CFrame)
+							VirtualUser:Button1Down(Vector2.new(1e4, 1e4), Workspace.CurrentCamera.CFrame)
+							task.wait(0.05)
+							VirtualUser:Button1Up(Vector2.new(1e4, 1e4), Workspace.CurrentCamera.CFrame)
 						end
 					end
 				end)
