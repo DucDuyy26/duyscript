@@ -5,8 +5,8 @@ end
 
 local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
-local Workspace = game:GetService("Workspace>
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local Workspace = game:GetService("Workspace")
+local TweenService = game:GetService("TweenService")
 
 -- TẢI THƯ VIỆN ORIONLIB TRỰC TIẾP TỪ INTERNET
 local success, OrionLib = pcall(function()
@@ -24,6 +24,15 @@ end
 getgenv().AutoFarm = false
 getgenv().TargetMobNames = {"Reborn Skeleton", "Living Zombie", "Demonic Soul", "Possessed Mummy"} 
 getgenv().SelectedWeapon = "Melee"
+getgenv().CurrentTween = nil
+
+-- HÀM DỪNG TWEEN ĐANG CHẠY KHI TẮT AUTO FARM
+local function StopTween()
+    if getgenv().CurrentTween then
+        getgenv().CurrentTween:Cancel()
+        getgenv().CurrentTween = nil
+    end
+end
 
 -- HÀM TỰ ĐỘNG TRANG BỊ VŨ KHÍ
 local function EquipWeapon(toolType)
@@ -82,10 +91,10 @@ end
 
 -- TẠO GIAO DIỆN MENU
 local Window = OrionLib:MakeWindow({
-	Name = "Dizzi Hub | Remote Attack Farm",
+	Name = "Dizzi Hub | Smooth Tween Farm",
 	HidePremium = false,
 	SaveConfig = false,
-	ConfigFolder = "DizziConfig_Remote",
+	ConfigFolder = "DizziConfig_Tween",
 	IntroIcon = "rbxassetid://84764915900713",
 	IntroText = "Dizzi Hub Loading..."
 })
@@ -123,15 +132,15 @@ FarmTab:AddTextbox({
 	Default = "Reborn Skeleton, Living Zombie, Demonic Soul, Possessed Mummy",
 	TextDisappear = false,
 	Callback = function(Value)
-		valList = {}
+		local list = {}
 		for mobName in Value:gmatch("[^,]+") do
 			local cleanName = mobName:match("^%s*(.-)%s*$")
 			if cleanName ~= "" then
-				table.insert(valList, cleanName)
+				table.insert(list, cleanName)
 			end
 		end
-		if #valList > 0 then
-			getgenv().TargetMobNames = valList
+		if #list > 0 then
+			getgenv().TargetMobNames = list
 		end
 	end
 })
@@ -146,10 +155,14 @@ FarmTab:AddDropdown({
 })
 
 FarmTab:AddToggle({
-	Name = "Auto Farm (Remote Attack Chuẩn)",
+	Name = "Auto Farm Bay Mượt (Tween)",
 	Default = false,
 	Callback = function(Value)
 		getgenv().AutoFarm = Value
+		
+		if not Value then
+			StopTween()
+		end
 		
 		task.spawn(function()
 			while getgenv().AutoFarm do
@@ -164,29 +177,40 @@ FarmTab:AddToggle({
 						local mob = GetMobFromList(getgenv().TargetMobNames)
 						if mob and mob:FindFirstChild("HumanoidRootPart") then
 							local mobRoot = mob.HumanoidRootPart
+							local targetCFrame = mobRoot.CFrame * CFrame.new(0, 15, 0)
 							
-							-- Giữ nhân vật lơ lửng ổn định bên trên quái, không bị giật màn hình
-							char.HumanoidRootPart.CFrame = mobRoot.CFrame * CFrame.new(0, 18, 0)
-							char.HumanoidRootPart.Velocity = Vector3.new(0, 0, 0)
+							-- Tính toán thời gian bay dựa trên khoảng cách (khoảng cách / tốc độ bay)
+							local distance = (char.HumanoidRootPart.Position - mobRoot.Position).Magnitude
+							local flySpeed = 250 -- Tốc độ bay (studs/s)
+							local timeVal = distance / flySpeed
+							if timeVal < 0.1 then timeVal = 0.1 end
 							
-							-- 3. Kích hoạt tấn công trực tiếp qua RemoteEvent của game (Chắc chắn đánh trúng)
-							local combatRemote = ReplicatedStorage:FindFirstChild("Remotes") and ReplicatedStorage.Remotes:FindFirstChild("CommF_")
-							if combatRemote then
-								combatRemote:InvokeServer("AddPoint", "Melee", 0) -- Giữ kết nối
+							-- 3. Bay từ từ đến vị trí phía trên quái bằng TweenService
+							StopTween()
+							local tweenInfo = TweenInfo.new(timeVal, Enum.EasingStyle.Linear)
+							getgenv().CurrentTween = TweenService:Create(char.HumanoidRootPart, tweenInfo, {CFrame = targetCFrame})
+							getgenv().CurrentTween:Play()
+							
+							-- Đợi bay đến nơi hoặc quái chết
+							local startTime = tick()
+							while getgenv().AutoFarm and mob and mob:FindFirstChild("Humanoid") and mob.Humanoid.Health > 0 do
+								if (tick() - startTime) > timeVal then
+									-- Đã đến nơi, tiến hành tấn công bằng cách kích hoạt Tool đang cầm
+									local tool = char:FindFirstChildOfClass("Tool")
+									if tool then
+										tool:Activate()
+									end
+								end
+								task.wait(0.05)
 							end
-							
-							-- Ép vũ khí trên tay thực hiện đòn tấn công
-							local tool = char:FindFirstChildOfClass("Tool")
-							if tool and tool:FindFirstChild("RemoteFunctionCall") then
-								tool.RemoteFunctionCall:InvokeServer(mobRoot.Position)
-							elseif tool then
-								-- Gọi sự kiện kích hoạt đòn đánh mặc định của Tool
-								tool:Activate()
-							end
+							StopTween()
+						else
+							StopTween()
 						end
 					end
 				end)
 			end
+			StopTween()
 		end)
 	end
 })
