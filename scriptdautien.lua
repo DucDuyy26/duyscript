@@ -7,6 +7,7 @@ local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
 local Workspace = game:GetService("Workspace")
 local TweenService = game:GetService("TweenService")
+local VirtualUser = game:GetService("VirtualUser")
 
 -- TẢI THƯ VIỆN ORIONLIB TRỰC TIẾP TỪ INTERNET
 local success, OrionLib = pcall(function()
@@ -26,7 +27,6 @@ getgenv().TargetMobNames = {"Reborn Skeleton", "Living Zombie", "Demonic Soul", 
 getgenv().SelectedWeapon = "Melee"
 getgenv().CurrentTween = nil
 
--- HÀM DỪNG TWEEN ĐANG CHẠY KHI TẮT AUTO FARM
 local function StopTween()
     if getgenv().CurrentTween then
         getgenv().CurrentTween:Cancel()
@@ -91,10 +91,10 @@ end
 
 -- TẠO GIAO DIỆN MENU
 local Window = OrionLib:MakeWindow({
-	Name = "Dizzi Hub | Smooth Tween Farm",
+	Name = "Dizzi Hub | Direct Hit Farm",
 	HidePremium = false,
 	SaveConfig = false,
-	ConfigFolder = "DizziConfig_Tween",
+	ConfigFolder = "DizziConfig_DirectHit",
 	IntroIcon = "rbxassetid://84764915900713",
 	IntroText = "Dizzi Hub Loading..."
 })
@@ -155,7 +155,7 @@ FarmTab:AddDropdown({
 })
 
 FarmTab:AddToggle({
-	Name = "Auto Farm Bay Mượt (Tween)",
+	Name = "Auto Farm Sát Cạnh Quái",
 	Default = false,
 	Callback = function(Value)
 		getgenv().AutoFarm = Value
@@ -177,31 +177,42 @@ FarmTab:AddToggle({
 						local mob = GetMobFromList(getgenv().TargetMobNames)
 						if mob and mob:FindFirstChild("HumanoidRootPart") then
 							local mobRoot = mob.HumanoidRootPart
-							local targetCFrame = mobRoot.CFrame * CFrame.new(0, 15, 0)
 							
-							-- Tính toán thời gian bay dựa trên khoảng cách (khoảng cách / tốc độ bay)
+							-- THAY ĐỔI: Đứng ngay sát phía trước/trên đầu quái (cách chỉ 3 studs thay vì 15 studs) để hitbox nhận diện đòn đánh
+							local targetCFrame = mobRoot.CFrame * CFrame.new(0, 3, 2)
+							
+							-- Tính thời gian bay mượt bằng Tween
 							local distance = (char.HumanoidRootPart.Position - mobRoot.Position).Magnitude
-							local flySpeed = 250 -- Tốc độ bay (studs/s)
+							local flySpeed = 250
 							local timeVal = distance / flySpeed
 							if timeVal < 0.1 then timeVal = 0.1 end
 							
-							-- 3. Bay từ từ đến vị trí phía trên quái bằng TweenService
 							StopTween()
 							local tweenInfo = TweenInfo.new(timeVal, Enum.EasingStyle.Linear)
 							getgenv().CurrentTween = TweenService:Create(char.HumanoidRootPart, tweenInfo, {CFrame = targetCFrame})
 							getgenv().CurrentTween:Play()
 							
-							-- Đợi bay đến nơi hoặc quái chết
+							-- Đợi bay tới nơi rồi đánh liên tục
 							local startTime = tick()
 							while getgenv().AutoFarm and mob and mob:FindFirstChild("Humanoid") and mob.Humanoid.Health > 0 do
-								if (tick() - startTime) > timeVal then
-									-- Đã đến nơi, tiến hành tấn công bằng cách kích hoạt Tool đang cầm
-									local tool = char:FindFirstChildOfClass("Tool")
-									if tool then
-										tool:Activate()
-									end
+								-- Ghim chặt nhân vật sát ngay vị trí của quái
+								char.HumanoidRootPart.CFrame = mob.HumanoidRootPart.CFrame * CFrame.new(0, 3, 2)
+								char.HumanoidRootPart.Velocity = Vector3.new(0, 0, 0)
+								
+								-- Kích hoạt Tool và giả lập click liên tục để ép game chém
+								local tool = char:FindFirstChildOfClass("Tool")
+								if tool then
+									tool:Activate()
 								end
-								task.wait(0.05)
+								
+								pcall(function()
+									VirtualUser:CaptureController()
+									VirtualUser:Button1Down(Vector2.new(100, 100), Workspace.CurrentCamera.CFrame)
+									task.wait(0.05)
+									VirtualUser:Button1Up(Vector2.new(100, 100), Workspace.CurrentCamera.CFrame)
+								end)
+								
+								task.wait(0.1)
 							end
 							StopTween()
 						else
