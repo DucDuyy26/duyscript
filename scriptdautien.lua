@@ -1,14 +1,18 @@
--- TỰ ĐỘNG NHẬN DIỆN MÔI TRƯỜNG (CHẠY ĐƯỢC CẢ STUDIO LẪN DELTA MOBILE):
-local OrionLib = require(game.ReplicatedStorage:WaitForChild("OrionLib"))
+-- TỰ ĐỘNG NHẬN DIỆN MÔI TRƯỜNG ĐỂ CHẠY TRÊN CẢ STUDIO VÀ DELTA MOBILE
+local success, OrionLib = pcall(function()
+    return loadstring(game:HttpGet('https://raw.githubusercontent.com/shlexware/Orion/main/source'))()
+end)
 
--- CÁC DÒNG DƯỚI GIỮ NGUYÊN:
+if not success or not OrionLib then
+    OrionLib = require(game.ReplicatedStorage:WaitForChild("OrionLib"))
+end
+
 local Window = OrionLib:MakeWindow({
 	Name = "Dizzi Hub",
 	HidePremium = false,
 	SaveConfig = false,
 	ConfigFolder = "MyScriptConfig",
-	-- Thêm 2 dòng này để biến thành nút tròn có ảnh:
-	IntroIcon = "rbxassetid://84764915900713", -- Thay số ID decal ảnh của bạn vào đây
+	IntroIcon = "rbxassetid://84764915900713",
 	IntroText = "Dizzi Hub"
 })
 
@@ -33,6 +37,7 @@ MainTab:AddSlider({
 		end
 	end    
 })
+
 local FarmTab = Window:MakeTab({
 	Name = "Farm",
 	Icon = "rbxassetid://4483345998",
