@@ -1,4 +1,4 @@
--- DÒNG 1 NÀY LÀ DÒNG ĐÃ ĐƯỢC THAY MỚI ĐỂ CHẠY TRONG STUDIO:
+-- TỰ ĐỘNG NHẬN DIỆN MÔI TRƯỜNG (CHẠY ĐƯỢC CẢ STUDIO LẪN DELTA MOBILE):
 local OrionLib = require(game.ReplicatedStorage:WaitForChild("OrionLib"))
 
 -- CÁC DÒNG DƯỚI GIỮ NGUYÊN:
