@@ -1,6 +1,6 @@
 -- TỰ ĐỘNG NHẬN DIỆN MÔI TRƯỜNG ĐỂ CHẠY TRÊN CẢ STUDIO VÀ DELTA MOBILE
 local success, OrionLib = pcall(function()
-    return loadstring(game:HttpGet('https://raw.githubusercontent.com/shlexware/Orion/main/source'))()
+    return loadstring(game:HttpGet('https://raw.githubusercontent.com/jensonhirst/Orion/main/source'))()
 end)
 
 if not success or not OrionLib then
