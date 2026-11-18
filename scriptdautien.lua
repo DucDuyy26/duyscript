@@ -1,57 +1,50 @@
--- Kiểm tra xem game đã load xong chưa
-if not game:IsLoaded() then
-    game.Loaded:Wait()
-end
+-- DÒNG 1 NÀY LÀ DÒNG ĐÃ ĐƯỢC THAY MỚI ĐỂ CHẠY TRONG STUDIO:
+local OrionLib = require(game.ReplicatedStorage:WaitForChild("OrionLib"))
 
--- Tải thư viện OrionLib trực tiếp từ nguồn chính hãng
-local OrionLib = loadstring(game:HttpGet('https://raw.githubusercontent.com/shlexware/Orion/main/source'))()
-
--- Tạo cửa sổ Menu "Dizzi Hub" giống như trên Studio của bạn
+-- CÁC DÒNG DƯỚI GIỮ NGUYÊN:
 local Window = OrionLib:MakeWindow({
-    Name = "Dizzi Hub", 
-    HidePremium = false, 
-    SaveConfig = true, 
-    ConfigFolder = "DizziConfig"
+	Name = "Dizzi Hub",
+	HidePremium = false,
+	SaveConfig = false,
+	ConfigFolder = "MyScriptConfig",
+	-- Thêm 2 dòng này để biến thành nút tròn có ảnh:
+	IntroIcon = "rbxassetid://84764915900713", -- Thay số ID decal ảnh của bạn vào đây
+	IntroText = "Dizzi Hub"
 })
 
--- Tạo Tab "Chức năng"
-local TabChucNang = Window:MakeTab({
-    Name = "Chức năng",
-    Icon = "rbxassetid://4483345998",
-    PremiumOnly = false
+local MainTab = Window:MakeTab({
+	Name = "Chức năng",
+	Icon = "rbxassetid://4483345998",
+	PremiumOnly = false
 })
 
--- Thêm ô chỉnh tốc độ chạy (Tương ứng với mục trong ảnh của bạn)
-TabChucNang:AddTextbox({
-    Name = "Tốc độ chạy",
-    Default = "16",
-    TextDisappear = false,
-    Callback = function(Value)
-        local speed = tonumber(Value)
-        if speed then
-            local player = game.Players.LocalPlayer
-            if player and player.Character and player.Character:FindFirstChild("Humanoid") then
-                player.Character.Humanoid.WalkSpeed = speed
-            end
-        end
-    end
+MainTab:AddSlider({
+	Name = "Tốc độ chạy",
+	Min = 16,
+	Max = 200,
+	Default = 16,
+	Color = Color3.fromRGB(255, 255, 255),
+	Increment = 1,
+	ValueName = "Tốc độ",
+	Callback = function(Value)
+		local char = game.Players.LocalPlayer.Character
+		if char and char:FindFirstChild("Humanoid") then
+			char.Humanoid.WalkSpeed = Value
+		end
+	end    
+})
+local FarmTab = Window:MakeTab({
+	Name = "Farm",
+	Icon = "rbxassetid://4483345998",
+	PremiumOnly = false
 })
 
--- Tạo Tab "Farm"
-local TabFarm = Window:MakeTab({
-    Name = "Farm",
-    Icon = "rbxassetid://4483345998",
-    PremiumOnly = false
+FarmTab:AddToggle({
+	Name = "Auto Farm Level",
+	Default = false,
+	Callback = function(Value)
+		print("Auto Farm Level:", Value)
+	end
 })
 
-TabFarm:AddToggle({
-    Name = "Tự động Farm",
-    Default = false,
-    Callback = function(State)
-        print("Trạng thái Auto Farm: ", State)
-        -- Viết code farm của bạn ở đây
-    end
-})
-
--- Khởi động giao diện Orion
 OrionLib:Init()
