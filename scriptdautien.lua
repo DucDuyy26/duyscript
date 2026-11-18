@@ -7,6 +7,7 @@ local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
 local Workspace = game:GetService("Workspace")
 local VirtualUser = game:GetService("VirtualUser")
+local Camera = Workspace.CurrentCamera
 
 -- TẢI THƯ VIỆN ORIONLIB TRỰC TIẾP TỪ INTERNET
 local success, OrionLib = pcall(function()
@@ -82,10 +83,10 @@ end
 
 -- TẠO GIAO DIỆN MENU
 local Window = OrionLib:MakeWindow({
-	Name = "Dizzi Hub | High Above Farm",
+	Name = "Dizzi Hub | Click Auto Farm",
 	HidePremium = false,
 	SaveConfig = false,
-	ConfigFolder = "DizziConfig_HighAbove",
+	ConfigFolder = "DizziConfig_Click",
 	IntroIcon = "rbxassetid://84764915900713",
 	IntroText = "Dizzi Hub Loading..."
 })
@@ -146,7 +147,7 @@ FarmTab:AddDropdown({
 })
 
 FarmTab:AddToggle({
-	Name = "Auto Farm Bay Trên Quái",
+	Name = "Auto Farm Click Màn Hình",
 	Default = false,
 	Callback = function(Value)
 		getgenv().AutoFarm = Value
@@ -165,17 +166,18 @@ FarmTab:AddToggle({
 						if mob and mob:FindFirstChild("HumanoidRootPart") then
 							local mobRoot = mob.HumanoidRootPart
 							
-							-- ĐẶT NHÂN VẬT BAY CAO HẲN LÊN TRÊN ĐẦU QUÁI (Cách 18 studs theo chiều dọc Y)
+							-- Bay lơ lửng cách phía trên quái 18 studs
 							char.HumanoidRootPart.CFrame = mobRoot.CFrame * CFrame.new(0, 18, 0)
-							
-							-- Triệt tiêu gia tốc để đứng lơ lửng cố định không bị rơi hay giật
 							char.HumanoidRootPart.Velocity = Vector3.new(0, 0, 0)
 							
-							-- 3. Kích hoạt click tấn công
+							-- Hướng camera nhìn thẳng xuống con quái để cú click màn hình trúng đích
+							Camera.CFrame = CFrame.new(Camera.CFrame.Position, mobRoot.Position)
+							
+							-- 3. Giả lập bấm click màn hình điện thoại để đánh
 							VirtualUser:CaptureController()
-							VirtualUser:Button1Down(Vector2.new(1e4, 1e4), Workspace.CurrentCamera.CFrame)
+							VirtualUser:Button1Down(Vector2.new(100, 100), Camera.CFrame)
 							task.wait(0.05)
-							VirtualUser:Button1Up(Vector2.new(1e4, 1e4), Workspace.CurrentCamera.CFrame)
+							VirtualUser:Button1Up(Vector2.new(100, 100), Camera.CFrame)
 						end
 					end
 				end)
